@@ -8,9 +8,9 @@ types_text = {
 }
 
 
-def set_new_image(photo_id, img_description, img_type):
+def set_new_image(photo_id, img_description, img_type, user_id):
 
-    img_path = f'UserFiles/Photos/{photo_id}.jpg'
+    img_path = f'UserFiles/Photos_{user_id}/{photo_id}.jpg'
     with Image.open(img_path) as im:
         if im.width > im.height:
             im = im.rotate(90, expand=True)
@@ -57,4 +57,4 @@ def set_new_image(photo_id, img_description, img_type):
         drawer.text((plus_width // 2, new_image.height - text_size * 1.5),
                     text=cap1 + tab + cap2, font=font2, fill='black')
 
-        new_image.save(f'UserFiles/ResultPhotos/{photo_id}.jpg')
+        new_image.save(f'UserFiles/ResultPhotos_{user_id}/{photo_id}.jpg')

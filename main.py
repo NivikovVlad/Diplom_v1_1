@@ -6,7 +6,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import executor
 
-import About_goods
 import process_photo
 from keyboards import *
 from About_goods import *
@@ -36,6 +35,9 @@ async def set_instruction(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.ANY, state=PhotoState.photos)
 async def get_message(message: types.Message, album: list[types.Message] = None, state=None):
+    user_id = message.from_user.id
+    os.makedirs(f'UserFiles/Photos_{user_id}', exist_ok=True)
+    os.makedirs(f'UserFiles/ResultPhotos_{user_id}', exist_ok=True)
     if not album:
         album = [message]
 
@@ -47,7 +49,7 @@ async def get_message(message: types.Message, album: list[types.Message] = None,
             continue
 
         try:
-            file_path = f'UserFiles/Photos/{file_id}.jpg'
+            file_path = f'UserFiles/Photos_{user_id}/{file_id}.jpg'
             if os.path.exists(file_path):
                 pass
             else:
@@ -59,7 +61,8 @@ async def get_message(message: types.Message, album: list[types.Message] = None,
 
     await message.answer('👌 Фото успешно загружены...')
 
-    await state.update_data(photos=media_group)
+    await state.update_data(photos=[media_group, user_id])
+    data = await state.get_data()
     await message.answer('🎆 Выбери тип карточки:', reply_markup=card_type_kb)
     await PhotoState.type_card.set()
 
@@ -85,7 +88,7 @@ async def request_descriptions(message: types.Message, state):
     photos = data['photos']
 
     if photos:
-        first_photo = photos.media[0]['media']
+        first_photo = photos[0].media[0]['media']
         await PhotoState.descriptions.set()
         await send_photo(message, state, first_photo)
     else:
@@ -93,9 +96,9 @@ async def request_descriptions(message: types.Message, state):
 
 
 async def send_photo(message: types.Message, state, photo: str):
-
+    user_id = message.from_user.id
     await PhotoState.waiting_for_description.set()
-    file_path = f'UserFiles/Photos/{photo}.jpg'
+    file_path = f'UserFiles/Photos_{user_id}/{photo}.jpg'
     with open(file_path, 'rb') as img:
         await message.answer_photo(img, caption='✍ Напиши подпись для этого фото')
 
@@ -107,12 +110,13 @@ async def process_confirmation(message: types.Message, state):
     remaining_photos = data.get('photos', [])
     desc = {}
 
-    if len(remaining_photos.media) == 1:
-        current_photo = remaining_photos.media[0]['media']
-        desc[current_photo] = message.text
+    if len(remaining_photos[0].media) == 1:
+        current_photo = remaining_photos[0].media[0]['media']
+        current_user_id = remaining_photos[1]
+        desc[current_photo] = [message.text, current_user_id]
         PhotoDescription.description.append(desc)
 
-        remaining_photos.media.remove(remaining_photos.media[0])
+        remaining_photos[0].media.remove(remaining_photos[0].media[0])
 
         await state.update_data(photos=remaining_photos)
         await message.answer('Фото готовы к обработке', reply_markup=proc_kb)
@@ -120,13 +124,14 @@ async def process_confirmation(message: types.Message, state):
         await PhotoState.process.set()
 
     else:
-        next_photo = remaining_photos.media[1]['media']
+        next_photo = remaining_photos[0].media[1]['media']
 
-        current_photo = remaining_photos.media[0]['media']
-        desc[current_photo] = message.text
+        current_photo = remaining_photos[0].media[0]['media']
+        current_user_id = remaining_photos[1]
+        desc[current_photo] = (message.text, current_user_id)
         PhotoDescription.description.append(desc)
 
-        remaining_photos.media.remove(remaining_photos.media[0])
+        remaining_photos[0].media.remove(remaining_photos[0].media[0])
 
         await state.update_data(photos=remaining_photos)
         await send_photo(message, state, next_photo)
@@ -134,37 +139,37 @@ async def process_confirmation(message: types.Message, state):
 
 @dp.message_handler(text=['Обработать'], state=PhotoState.process)
 async def check(message: types.Message, state):
+    user_id = message.from_user.id
     data = await state.get_data()
     photo_descriptions = data['descriptions']
     img_type = data['type_card']
     try:
         for i in range(0, len(photo_descriptions)):
             for photo_id, photo_description in photo_descriptions[i].items():
-                process_photo.set_new_image(photo_id, photo_description, img_type)
 
-                result_photo_path = f'UserFiles/ResultPhotos/{photo_id}.jpg'
-                with open(result_photo_path, 'rb') as photo:
-                    await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
+                if str(photo_description[1]) == str(user_id):
+                    process_photo.set_new_image(photo_id, photo_description[0], img_type, user_id)
+                    result_photo_path = f'UserFiles/ResultPhotos_{user_id}/{photo_id}.jpg'
+                    with open(result_photo_path, 'rb') as photo:
+                        await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
 
-        clear()
+        clear(user_id)
         await state.finish()
         await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
-
-        # await state.reset()
         PhotoDescription.description = []
 
     except Exception as exc:
         print(exc)
         await state.finish()
-        # await state.reset()
         PhotoDescription.description = []
-        clear()
+        clear(user_id)
         await message.answer('🆘 Упс! Что-то сломалось', reply_markup=start_kb)
 
 
 if __name__ == '__main__':
-    os.makedirs('UserFiles/Photos', exist_ok=True)
-    os.makedirs('UserFiles/ResultPhotos', exist_ok=True)
+    os.makedirs('UserFiles', exist_ok=True)
+    # os.makedirs('UserFiles/Photos', exist_ok=True)
+    # os.makedirs('UserFiles/ResultPhotos', exist_ok=True)
     album_middleware = AlbumMiddleware()
     dp.middleware.setup(album_middleware)
     executor.start_polling(dp, skip_updates=True)

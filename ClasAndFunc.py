@@ -9,14 +9,14 @@ from aiogram.dispatcher.handler import CancelHandler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 
 
-def clear():
-    photo_list_ish = os.listdir('UserFiles/Photos')
-    photo_list_fin = os.listdir('UserFiles/ResultPhotos')
+def clear(user_id):
+    photo_list_ish = os.listdir(f'UserFiles/Photos_{user_id}')
+    photo_list_fin = os.listdir(f'UserFiles/ResultPhotos_{user_id}')
 
     for photo in photo_list_ish:
-        os.remove(f'UserFiles/Photos/{photo}')
+        os.remove(f'UserFiles/Photos_{user_id}/{photo}')
     for photo in photo_list_fin:
-        os.remove(f'UserFiles/ResultPhotos/{photo}')
+        os.remove(f'UserFiles/ResultPhotos_{user_id}/{photo}')
 
 
 class PhotoDescription:
