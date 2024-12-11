@@ -20,10 +20,10 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
-    await message.answer(About_goods.start, reply_markup=start_kb)
+    await message.answer(start, reply_markup=start_kb)
 
 
-@dp.message_handler(text=['Загрузить фото'])
+@dp.message_handler(text=['Загрузить фото'], state='*')
 async def request_photo(message: types.Message):
     await message.answer('🔄 Загрузи фото...')
     await PhotoState.photos.set()
@@ -31,7 +31,7 @@ async def request_photo(message: types.Message):
 
 @dp.message_handler(text=['Инструкция'])
 async def set_instruction(message: types.Message):
-    await message.answer(About_goods.instruction, reply_markup=start_kb)
+    await message.answer(instruction, reply_markup=start_kb)
 
 
 @dp.message_handler(content_types=types.ContentType.ANY, state=PhotoState.photos)
@@ -99,21 +99,6 @@ async def send_photo(message: types.Message, state, photo: str):
     with open(file_path, 'rb') as img:
         await message.answer_photo(img, caption='✍ Напиши подпись для этого фото')
 
-    # Запрашиваем подтверждение для продолжения
-    # await message.answer('Хотите продолжить? (да/нет)', reply_markup=types.ReplyKeyboardMarkup(
-    #     keyboard=[
-    #         [types.KeyboardButton(text='Да')],
-    #         [types.KeyboardButton(text='Нет')]
-    #     ],
-    #     resize_keyboard=True,
-    #     one_time_keyboard=True
-    # ))
-
-    # Сохраняем текущее состояние
-    # data = await state.get_data()
-    # current_photos = data.get('photos', [])
-    # await state.update_data(current_photos=current_photos)
-
 
 @dp.message_handler(state=PhotoState.waiting_for_description)
 async def process_confirmation(message: types.Message, state):
@@ -162,12 +147,17 @@ async def check(message: types.Message, state):
                     await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
 
         clear()
-        await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
         await state.finish()
+        await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
+
+        # await state.reset()
+        PhotoDescription.description = []
 
     except Exception as exc:
         print(exc)
         await state.finish()
+        # await state.reset()
+        PhotoDescription.description = []
         clear()
         await message.answer('🆘 Упс! Что-то сломалось', reply_markup=start_kb)
 

@@ -48,7 +48,7 @@ def set_new_image(photo_id, img_description, img_type):
             for word in s2:
                 cap2 += str(word + ' ')
 
-            tab = ''
+            tab = '\n'
             font2 = ImageFont.truetype("./Fonts/Angeme-Regular.ttf", text_size // 1.5)
         else:
             cap1 = img_description
