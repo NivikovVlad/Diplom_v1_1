@@ -1,5 +1,3 @@
-import os
-from pprint import pprint
 from PIL import Image, ImageFont, ImageDraw, ImageOps
 from PIL.Image import Resampling
 
@@ -60,23 +58,3 @@ def set_new_image(photo_id, img_description, img_type):
                     text=cap1 + tab + cap2, font=font2, fill='black')
 
         new_image.save(f'UserFiles/ResultPhotos/{photo_id}.jpg')
-        print(f'Сохраняю: {new_image}')
-        # result_images.append(new_image)
-        # return result_images
-
-
-# if __name__ == '__main__':
-#     # print(len(captions_for_pictures))
-#     # Images = MyImage(images_dir, new_images_dir)
-#     # Images.set_new_image()
-#     images_list = []
-#     test_images_dir = './test_dir/'
-#     files = (file for file in os.listdir(new_images_dir) if file.endswith(('.png', '.jpg', '.jpeg', '.JPG')))
-#     for file in files:
-#         images_list.append(os.path.join(new_images_dir, file))
-#     i = 0
-#     for img in images_list:
-#         with Image.open(img) as imgs:
-#             imgs = imgs.rotate(90, expand=True)
-#             imgs.save(str(test_images_dir) + str(i) + '.png')
-#             i += 1
