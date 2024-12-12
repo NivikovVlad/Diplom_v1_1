@@ -83,7 +83,7 @@ async def set_type_love_is(call, state):
     await PhotoState.descriptions.set()
 
 
-@dp.callback_query_handler(text=['friend_is'], state=PhotoState.type_card)
+@dp.callback_query_handler(text=['friendship_is'], state=PhotoState.type_card)
 async def set_type_friend_is(call, state):
 
     await state.update_data(type_card='friend_is')
@@ -146,7 +146,7 @@ async def process_confirmation(message: types.Message, state):
 
 
 @dp.message_handler(text=['Обработать'], state=PhotoState.process)
-async def check(message: types.Message, state):
+async def get_result_photo(message: types.Message, state):
     user_id = message.from_user.id
     data = await state.get_data()
     photo_descriptions = data['descriptions']
