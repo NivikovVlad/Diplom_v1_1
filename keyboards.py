@@ -20,7 +20,7 @@ card_type_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
             InlineKeyboardButton(text='Love is...', callback_data='love_is'),
-            InlineKeyboardButton(text='Friend is...', callback_data='friend_is'),
+            InlineKeyboardButton(text='Friendship is...', callback_data='friendship_is'),
         ]
     ],
     resize_keyboard=True

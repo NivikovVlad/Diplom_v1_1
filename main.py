@@ -11,7 +11,6 @@ from keyboards import *
 from About_goods import *
 from ClasAndFunc import PhotoDescription, PhotoState, AlbumMiddleware, clear
 
-
 load_dotenv()
 bot = Bot(os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -29,12 +28,12 @@ async def request_photo(message: types.Message):
 
 
 @dp.message_handler(text=['Инструкция'])
-async def set_instruction(message: types.Message):
+async def print_instruction(message: types.Message):
     await message.answer(instruction, reply_markup=start_kb)
 
 
 @dp.message_handler(content_types=types.ContentType.ANY, state=PhotoState.photos)
-async def get_message(message: types.Message, album: list[types.Message] = None, state=None):
+async def get_photos(message: types.Message, album: list[types.Message] = None, state=None):
     user_id = message.from_user.id
     os.makedirs(f'UserFiles/Photos_{user_id}', exist_ok=True)
     os.makedirs(f'UserFiles/ResultPhotos_{user_id}', exist_ok=True)
@@ -46,7 +45,13 @@ async def get_message(message: types.Message, album: list[types.Message] = None,
         if file.photo:
             file_id = file.photo[-1].file_id
         else:
-            continue
+            await message.answer("🆘 Я принимаю только фото!\n"
+                                 "Попробуй заново", reply_markup=start_kb)
+            # await state.finish()
+            await PhotoState.photos.set()
+            PhotoDescription.description = []
+            clear(user_id)
+            return
 
         try:
             file_path = f'UserFiles/Photos_{user_id}/{file_id}.jpg'
@@ -56,19 +61,23 @@ async def get_message(message: types.Message, album: list[types.Message] = None,
                 await file.photo[-1].download(file_path)
             media_group.attach(types.InputMedia(media=file_id, type=file.content_type))
 
-        except ValueError:
-            return await message.answer("🆘 Что-то пошло не так...")
+        except Exception as exc:
+            await state.finish()
+            PhotoDescription.description = []
+            clear(user_id)
+            await message.answer(str(exc), reply_markup=card_type_kb)
+            return await message.answer("🆘 Что-то пошло не так...", reply_markup=start_kb)
 
     await message.answer('👌 Фото успешно загружены...')
 
     await state.update_data(photos=[media_group, user_id])
-    data = await state.get_data()
     await message.answer('🎆 Выбери тип карточки:', reply_markup=card_type_kb)
     await PhotoState.type_card.set()
 
 
 @dp.callback_query_handler(text=['love_is'], state=PhotoState.type_card)
 async def set_type_love_is(call, state):
+
     await state.update_data(type_card='love_is')
     await call.message.answer('🎆 Выбран тип карточки: "Love is..."', reply_markup=next_kb)
     await PhotoState.descriptions.set()
@@ -76,14 +85,14 @@ async def set_type_love_is(call, state):
 
 @dp.callback_query_handler(text=['friend_is'], state=PhotoState.type_card)
 async def set_type_friend_is(call, state):
+
     await state.update_data(type_card='friend_is')
-    await call.message.answer('🎆 Выбран тип карточки: "Friend is..."', reply_markup=next_kb)
+    await call.message.answer('🎆 Выбран тип карточки: "Friendship is..."', reply_markup=next_kb)
     await PhotoState.descriptions.set()
 
 
 @dp.message_handler(text=['Продолжить'], state=PhotoState.descriptions)
 async def request_descriptions(message: types.Message, state):
-
     data = await state.get_data()
     photos = data['photos']
 
@@ -105,7 +114,6 @@ async def send_photo(message: types.Message, state, photo: str):
 
 @dp.message_handler(state=PhotoState.waiting_for_description)
 async def process_confirmation(message: types.Message, state):
-
     data = await state.get_data()
     remaining_photos = data.get('photos', [])
     desc = {}
@@ -155,12 +163,14 @@ async def check(message: types.Message, state):
 
         clear(user_id)
         await state.finish()
+        await PhotoState.photos.set()
         await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
         PhotoDescription.description = []
 
     except Exception as exc:
         print(exc)
         await state.finish()
+        await PhotoState.photos.set()
         PhotoDescription.description = []
         clear(user_id)
         await message.answer('🆘 Упс! Что-то сломалось', reply_markup=start_kb)
