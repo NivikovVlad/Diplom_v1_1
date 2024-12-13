@@ -14,9 +14,9 @@ def set_new_image(photo_id, img_description, img_type, user_id):
     with Image.open(img_path) as im:
         if im.width > im.height:
             im = im.rotate(90, expand=True)
+        im = ImageOps.fit(im, (987, 1520), method=Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))
         plus_width = im.width // 100 * 3
         plus_height = im.height // 100 * 20
-        im = ImageOps.fit(im, (987, 1520), method=Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))
 
         new_image = Image.new(mode="RGB", size=[im.width+plus_width, im.height+plus_height], color=(235, 215, 205))
 
