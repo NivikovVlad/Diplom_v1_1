@@ -4,14 +4,17 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 start_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text='Загрузить фото')],
-        [KeyboardButton(text='Инструкция')]
+        [KeyboardButton(text='Инструкция')],
+        [KeyboardButton(text='Перезагрузить')]
     ],
     resize_keyboard=True
 )
 
-next_kb = ReplyKeyboardMarkup(
+confirm_type_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text='Продолжить')],
+        [KeyboardButton(text='Изменить')],
+        [KeyboardButton(text='Перезагрузить')]
     ],
     resize_keyboard=True
 )
