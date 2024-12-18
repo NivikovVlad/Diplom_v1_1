@@ -1,4 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+# from config import price
 
 
 start_kb = ReplyKeyboardMarkup(
@@ -39,8 +40,16 @@ proc_kb = ReplyKeyboardMarkup(
 
 ref_linc_kb = InlineKeyboardMarkup(
     inline_keyboard=[
+        [InlineKeyboardButton(text='Получить реферальную ссылку', callback_data='get_ref')],
+        [InlineKeyboardButton(text='Пополнить баланс', callback_data='buy_token'),]
+    ],
+    resize_keyboard=True
+)
+
+buy_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
         [
-            InlineKeyboardButton(text='Получить реферальную ссылку', callback_data='get_ref'),
+            InlineKeyboardButton(text='Купить 500 token', callback_data='confirm_buy'),
         ]
     ],
     resize_keyboard=True

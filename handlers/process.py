@@ -1,6 +1,5 @@
 import os
 from aiogram import types
-from aiogram.types import callback_query, CallbackQuery
 
 from Database.database import session
 import process_photo
@@ -11,30 +10,36 @@ from keyboards import *
 
 
 async def start_command(message: types.Message) -> None:
-
     if len(message.text.split()) > 1:
-        referrer_id = str(message.text.split()[1])
-        referrer_user_id = session.query(User.id).filter_by(user_id=referrer_id).first()[0]
-        # referrer_user_id = referrer_user_id[0]
+        # Получаем id пользователя телеграмм, по чьей ссылке мы перешли
+        referrer_user_id = str(message.text.split()[1])
+        # Получаем id этого пользователя в БД
+        referrer_bd_id = session.query(User.id).filter_by(user_id=referrer_user_id).first()[0]
     else:
-        # referrer_id = None
         referrer_user_id = None
+        referrer_bd_id = None
 
     user_id = str(message.from_user.id)
     username = message.from_user.username
     firstname = message.from_user.first_name
 
+    # Проверяем есть ли пользователь в БД
     user = session.query(User).filter_by(user_id=user_id).first()
     if user is None:
         # Пользователь не существует, добавить его в базу данных
-        new_user = User(user_id=user_id, username=username, firstname=firstname, referrer_id=referrer_user_id)
+        new_user = User(user_id=user_id, username=username, firstname=firstname)
         session.add(new_user)
         session.commit()
 
+        # Если пользователь пришел по реферальной ссылке
         if referrer_user_id is not None:
-            # Создать новый реферал
-            new_referral = Referral(user_id=referrer_user_id, referred_user_id=new_user.id)
+            # Добавить запись в таблицу рефералов
+            new_referral = Referral(user_id=new_user.id, referrer_id=referrer_bd_id)
             session.add(new_referral)
+
+            session.query(User).filter_by(id=referrer_bd_id).update({User.balance: User.balance + 50})
+
+            # session.commit()
         session.commit()
 
     await message.answer(f'Привет {firstname}!\n'
@@ -42,37 +47,12 @@ async def start_command(message: types.Message) -> None:
     session.close()
 
 
-async def reload_command(message: types.Message, state):
-    user_id = message.from_user.id
-    await return_to_start(state, user_id)
-    await message.answer(exit_, reply_markup=start_kb)
-
-
-async def get_profile(message: types.Message):
-    user_id = str(message.from_user.id)
-    user = session.query(User).filter_by(user_id=user_id).first()
-    referrals = session.query(Referral).filter_by(user_id=user.id).all()
-    if referrals is None:
-        count_ref = 'У вас нет рефералов'
-    else:
-        count_ref = len(referrals)
-    await message.answer(f'ID: {user.user_id}\n'
-                         # f'Ник: {user.firstname}\n'
-                         f'Баланс: {user.balance} токенов\n'
-                         f'Доступно обработок: {user.available_uses} фото\n'
-                         f'Всего обработано: {user.total_uses} фото\n'
-                         f'Приглашено: {count_ref} пользователей', reply_markup=ref_linc_kb)
-    session.close()
-
-
-async def get_ref(call):
-    user_id = str(call.from_user.id)
-    await call.message.answer(f'https://t.me/make_loveis_bot?start={user_id}')
-    await call.answer()
-
-
 async def request_photo(message: types.Message):
-    await message.answer('🔄 Загрузи фото...')
+    user_id = str(message.from_user.id)
+    balance = session.query(User.balance).filter_by(user_id=user_id).first()[0]
+    await message.answer('🔄 Загрузи фото...\n'
+                         f'Для обработки доступно {balance // 10} фото')
+    session.close()
     await PhotoState.photos.set()
 
 
@@ -88,32 +68,44 @@ async def get_photos(message: types.Message, album: list[types.Message] = None, 
         album = [message]
 
     media_group = types.MediaGroup()
-    for file in album:
-        if file.photo:
-            file_id = file.photo[-1].file_id
-        else:
-            await message.answer("🆘 Я принимаю только фото!\n"
-                                 "Попробуй заново", reply_markup=start_kb)
-            # await state.finish()
-            await PhotoState.photos.set()
-            PhotoDescription.description = []
-            clear(user_id)
-            return
-
-        try:
-            file_path = f'UserFiles/Photos_{user_id}/{file_id}.jpg'
-            if os.path.exists(file_path):
-                pass
+    user_id = str(message.from_user.id)
+    balance = session.query(User.balance).filter_by(user_id=user_id).first()[0]
+    session.close()
+    if len(album) <= balance / 10:
+        for file in album:
+            if file.photo:
+                file_id = file.photo[-1].file_id
             else:
-                await file.photo[-1].download(file_path)
-            media_group.attach(types.InputMedia(media=file_id, type=file.content_type))
+                await message.answer("🆘 Я принимаю только фото!\n"
+                                     "Попробуй заново", reply_markup=start_kb)
 
-        except Exception as exc:
-            await state.finish()
-            PhotoDescription.description = []
-            clear(user_id)
-            await message.answer(str(exc), reply_markup=card_type_kb)
-            return await message.answer("🆘 Что-то пошло не так...", reply_markup=start_kb)
+                await PhotoState.photos.set()
+                PhotoDescription.description = []
+                clear(user_id)
+                return
+
+            try:
+                file_path = f'UserFiles/Photos_{user_id}/{file_id}.jpg'
+                if os.path.exists(file_path):
+                    pass
+                else:
+                    await file.photo[-1].download(file_path)
+                media_group.attach(types.InputMedia(media=file_id, type=file.content_type))
+
+            except Exception as exc:
+                session.close()
+                await state.finish()
+                PhotoDescription.description = []
+                clear(user_id)
+                await message.answer(str(exc), reply_markup=card_type_kb)
+                return await message.answer("🆘 Что-то пошло не так...", reply_markup=start_kb)
+    else:
+        # session.close()
+        await state.finish()
+        PhotoDescription.description = []
+        clear(user_id)
+        return await message.answer(f"🆘 Вам доступно {balance // 10} фото\n"
+                                    f"  Вы загрузили {len(album)} фото", reply_markup=start_kb)
 
     await message.answer('👌 Фото успешно загружены...')
 
@@ -201,6 +193,12 @@ async def get_result_photo(message: types.Message, state):
                     with open(result_photo_path, 'rb') as photo:
                         await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
 
+        session.query(User).filter_by(user_id=str(user_id)).update(
+            {User.balance: User.balance - len(photo_descriptions) * 10})
+        session.query(User).filter_by(user_id=str(user_id)).update(
+            {User.total_uses: User.total_uses + len(photo_descriptions)})
+        session.commit()
+        session.close()
         await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
 
     except Exception as exc:

@@ -6,7 +6,7 @@ from aiogram.utils import executor
 
 from ClasAndFunc import AlbumMiddleware
 from handlers.process import *
-
+from handlers.users import *
 
 bot = Bot(token)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -15,7 +15,9 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 dp.message_handler(commands=['start'])(start_command)
 dp.message_handler(text=['Перезагрузить'], state='*')(reload_command)
 dp.message_handler(text=['Профиль'])(get_profile)
-dp.callback_query_handler()(get_ref)
+dp.callback_query_handler(text=['get_ref'])(get_ref)
+dp.callback_query_handler(text=['buy_token'])(buy_token)
+dp.callback_query_handler(text=['confirm_buy'])(confirm_buy)
 dp.message_handler(text=['Загрузить фото'], state='*')(request_photo)
 dp.message_handler(text=['Инструкция'])(print_instruction)
 

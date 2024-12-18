@@ -10,14 +10,11 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(String(255), nullable=False)
-    username = Column(String(255), nullable=True)
+    user_id = Column(String(255), nullable=False, unique=True)
+    username = Column(String(255), default='unknown')
     firstname = Column(String(255), nullable=False)
-    available_uses = Column(Integer, default=5)
     total_uses = Column(Integer, default=0)
-    balance = Column(Float, default=0.00)
-    referrer_id = Column(Integer, ForeignKey('users.id'))
-    referrer = relationship("User", remote_side=[id])
+    balance = Column(Integer, default=100)
 
 
 class Referral(Base):
@@ -25,6 +22,6 @@ class Referral(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    referred_user_id = Column(Integer, ForeignKey('users.id'))
+    referrer_id = Column(Integer, ForeignKey('users.id'))
 
 

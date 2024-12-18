@@ -11,3 +11,6 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 database = os.getenv('DB_NAME')
 port = os.getenv('PORT')
+
+
+admin = '5185976112'
