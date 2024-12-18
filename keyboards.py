@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 start_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text='Загрузить фото')],
-        [KeyboardButton(text='Инструкция')],
+        [KeyboardButton(text='Инструкция'), KeyboardButton(text='Профиль')],
         [KeyboardButton(text='Перезагрузить')]
     ],
     resize_keyboard=True
@@ -33,6 +33,15 @@ card_type_kb = InlineKeyboardMarkup(
 proc_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text='Обработать')],
+    ],
+    resize_keyboard=True
+)
+
+ref_linc_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text='Получить реферальную ссылку', callback_data='get_ref'),
+        ]
     ],
     resize_keyboard=True
 )

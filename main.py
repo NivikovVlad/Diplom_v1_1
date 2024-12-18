@@ -14,6 +14,8 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 dp.message_handler(commands=['start'])(start_command)
 dp.message_handler(text=['Перезагрузить'], state='*')(reload_command)
+dp.message_handler(text=['Профиль'])(get_profile)
+dp.callback_query_handler()(get_ref)
 dp.message_handler(text=['Загрузить фото'], state='*')(request_photo)
 dp.message_handler(text=['Инструкция'])(print_instruction)
 

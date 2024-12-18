@@ -1,33 +1,74 @@
 import os
 from aiogram import types
+from aiogram.types import callback_query, CallbackQuery
+
 from Database.database import session
 import process_photo
-from Database.models import User
+from Database.models import User, Referral
 from TextForButtons import *
 from ClasAndFunc import PhotoState, PhotoDescription, clear, send_photo, return_to_start
 from keyboards import *
 
 
-async def start_command(message: types.Message):
-    user_id = message.from_user.id
-    print(type(user_id))
-    username = message.from_user.username
+async def start_command(message: types.Message) -> None:
 
-    user = session.query(User).filter_by(user_id=str(user_id)).first()
+    if len(message.text.split()) > 1:
+        referrer_id = str(message.text.split()[1])
+        referrer_user_id = session.query(User.id).filter_by(user_id=referrer_id).first()[0]
+        # referrer_user_id = referrer_user_id[0]
+    else:
+        # referrer_id = None
+        referrer_user_id = None
+
+    user_id = str(message.from_user.id)
+    username = message.from_user.username
+    firstname = message.from_user.first_name
+
+    user = session.query(User).filter_by(user_id=user_id).first()
     if user is None:
         # Пользователь не существует, добавить его в базу данных
-        new_user = User(user_id=str(user_id), username=username)
+        new_user = User(user_id=user_id, username=username, firstname=firstname, referrer_id=referrer_user_id)
         session.add(new_user)
         session.commit()
 
-    await message.answer(f'Привет {user.username}!\n'
+        if referrer_user_id is not None:
+            # Создать новый реферал
+            new_referral = Referral(user_id=referrer_user_id, referred_user_id=new_user.id)
+            session.add(new_referral)
+        session.commit()
+
+    await message.answer(f'Привет {firstname}!\n'
                          f'{start}', reply_markup=start_kb)
     session.close()
+
 
 async def reload_command(message: types.Message, state):
     user_id = message.from_user.id
     await return_to_start(state, user_id)
     await message.answer(exit_, reply_markup=start_kb)
+
+
+async def get_profile(message: types.Message):
+    user_id = str(message.from_user.id)
+    user = session.query(User).filter_by(user_id=user_id).first()
+    referrals = session.query(Referral).filter_by(user_id=user.id).all()
+    if referrals is None:
+        count_ref = 'У вас нет рефералов'
+    else:
+        count_ref = len(referrals)
+    await message.answer(f'ID: {user.user_id}\n'
+                         # f'Ник: {user.firstname}\n'
+                         f'Баланс: {user.balance} токенов\n'
+                         f'Доступно обработок: {user.available_uses} фото\n'
+                         f'Всего обработано: {user.total_uses} фото\n'
+                         f'Приглашено: {count_ref} пользователей', reply_markup=ref_linc_kb)
+    session.close()
+
+
+async def get_ref(call):
+    user_id = str(call.from_user.id)
+    await call.message.answer(f'https://t.me/make_loveis_bot?start={user_id}')
+    await call.answer()
 
 
 async def request_photo(message: types.Message):

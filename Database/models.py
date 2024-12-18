@@ -10,10 +10,10 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(String, nullable=False)
-    username = Column(String(255), nullable=False)
-    firstname = Column(String(255), nullable=True)
-    available_uses = Column(Integer, default=0)
+    user_id = Column(String(255), nullable=False)
+    username = Column(String(255), nullable=True)
+    firstname = Column(String(255), nullable=False)
+    available_uses = Column(Integer, default=5)
     total_uses = Column(Integer, default=0)
     balance = Column(Float, default=0.00)
     referrer_id = Column(Integer, ForeignKey('users.id'))
