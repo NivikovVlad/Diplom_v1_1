@@ -10,14 +10,3 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-# connection = psycopg2.connect(
-#     host=host,
-#     user=user,
-#     password=password,
-#     database=database,
-#     port=port,
-# )
-# connection.autocommit = True
-#
-# cursor = connection.cursor()
-
