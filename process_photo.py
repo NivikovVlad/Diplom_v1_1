@@ -3,8 +3,8 @@ from PIL.Image import Resampling
 
 
 types_text = {
-    'friend_is': ['Friendship is ...', 'Дружба это ...', 'icons/friendship.png'],
-    'love_is': ['Love is ...', 'Любовь это ...', 'icons/love.png']
+    'friend_is': ['Friendship is', 'Дружба это', 'icons/friendship.png'],
+    'love_is': ['Love is', 'Любовь это', 'icons/love.png']
 }
 
 
@@ -70,6 +70,6 @@ def set_new_image(photo_id, img_description, img_type, user_id):
             tab = ''
         # text - Собираем подпись. Наносим на холст
         drawer.text((plus_width // 2, new_image.height - text_size * 1.5),
-                    text=cap1 + tab + cap2, font=font2, fill='black')
+                    text='... ' + cap1 + tab + cap2, font=font2, fill='black')
         # Сохраняем готовую карточку
         new_image.save(f'UserFiles/ResultPhotos_{user_id}/{photo_id}.jpg')
