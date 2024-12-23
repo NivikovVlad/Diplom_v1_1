@@ -1,4 +1,4 @@
-import psycopg2
+# import psycopg2
 from sqlalchemy.orm import sessionmaker
 
 from config import *

@@ -237,8 +237,9 @@ async def get_result_photo(message: types.Message, state):
                     process_photo.set_new_image(photo_id, photo_description[0], img_type, user_id)
                     result_photo_path = f'UserFiles/ResultPhotos_{user_id}/{photo_id}.jpg'
                     # Отправляем пользователю результат обработки фото
-                    with open(result_photo_path, 'rb') as photo:
-                        await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
+                    # with open(result_photo_path, 'rb') as photo:
+                    #     await message.answer_photo(photo, caption='📸 Твоя обработанная фотография.')
+
         # Снимаем с баланса поинты за обработанные фото
         session.query(User).filter_by(user_id=str(user_id)).update(
             {User.balance: User.balance - len(photo_descriptions) * 10})
@@ -247,7 +248,12 @@ async def get_result_photo(message: types.Message, state):
             {User.total_uses: User.total_uses + len(photo_descriptions)})
         session.commit()
         session.close()
-        await message.answer('✅ Все фотографии успешно обработаны!', reply_markup=start_kb)
+
+        # Получим путь к pdf
+        path_to_pdf_file = process_photo.get_pdf(user_id)
+        await message.answer('✅ Все фотографии успешно обработаны!')
+        with open(path_to_pdf_file, 'rb') as file:
+            await message.answer_document(file, caption='📑 Осталось только распечатать')
 
     except Exception as exc:
         print(exc)

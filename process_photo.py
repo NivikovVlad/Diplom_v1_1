@@ -1,5 +1,8 @@
+import os
+
 from PIL import Image, ImageFont, ImageDraw, ImageOps
 from PIL.Image import Resampling
+from fpdf import FPDF
 
 
 types_text = {
@@ -29,9 +32,9 @@ def set_new_image(photo_id, img_description, img_type, user_id):
         plus_width = im.width // 100 * 3
         plus_height = im.height // 100 * 20
         # Создаем полотно на котором будем все отрисовывать
-        new_image = Image.new(mode="RGB", size=[im.width+plus_width, im.height+plus_height], color=(235, 215, 205))
+        new_image = Image.new(mode="RGB", size=[im.width + plus_width, im.height + plus_height], color=(235, 215, 205))
         # Помещаем наше фото на полотно
-        new_image.paste(im, (plus_width//2, plus_height//2))
+        new_image.paste(im, (plus_width // 2, plus_height // 2))
         # В зависимости от типа карточки помещаем соответсвующую эмблему на полотно
         icon_img = Image.open(types_text[img_type][2])
         icon_img = icon_img.resize((plus_height // 2, plus_height // 2))
@@ -73,3 +76,35 @@ def set_new_image(photo_id, img_description, img_type, user_id):
                     text='... ' + cap1 + tab + cap2, font=font2, fill='black')
         # Сохраняем готовую карточку
         new_image.save(f'UserFiles/ResultPhotos_{user_id}/{photo_id}.jpg')
+
+
+def get_pdf(user_id):
+    """
+    Создает pdf документ с результатом обработки
+    :param user_id: id пользователя
+    :return: путь к pdf файлу
+    """
+    try:
+        pdf = FPDF(orientation="landscape", format='A4')
+        # Директория обработанных изображений пользователя
+        directory = f"UserFiles/ResultPhotos_{user_id}/"
+        # Получаем список фото
+        files = [file for file in os.listdir(directory) if file.endswith('.jpg')]
+        # Разобьем список фото на списки по 3 фото (больше на лист не влезет)
+        split_files = [files[i:i + 3] for i in range(0, len(files), 3)]
+        # Размеры фото для pdf
+        h = 137.4
+        w = 79.0
+        for list_imgs in split_files:
+            # Добавляем страницу
+            pdf.add_page()
+            for i in range(0, len(list_imgs)):
+                pdf.set_x(w * i)
+                pdf.set_y(30)
+                pdf.image(f'{directory}{list_imgs[i]}', x=10 + 10 * i + w * i, h=h, w=w)
+
+        # Сохраняем pdf
+        pdf.output(f"{directory}{user_id}.pdf")
+        return f"{directory}{user_id}.pdf"
+    except:
+        return ''
