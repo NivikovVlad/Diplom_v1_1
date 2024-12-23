@@ -253,7 +253,7 @@ async def get_result_photo(message: types.Message, state):
         path_to_pdf_file = process_photo.get_pdf(user_id)
         await message.answer('✅ Все фотографии успешно обработаны!')
         with open(path_to_pdf_file, 'rb') as file:
-            await message.answer_document(file, caption='📑 Осталось только распечатать')
+            await message.answer_document(file, caption='📑 Осталось только распечатать', reply_markup=start_kb)
 
     except Exception as exc:
         print(exc)
